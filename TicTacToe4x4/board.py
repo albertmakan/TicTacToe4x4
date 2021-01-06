@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 X, O, E = -1, 1, 0  # values of signs (x, o, empty)
 
 
@@ -72,7 +73,6 @@ class Board:
         return None
 
     def _get_advice(self):
-        advice = []
         max_val = max([
             max(self.row_sums), max(self.col_sums),
             max(self.diag_sums), max(self.sqr_sums)])
@@ -83,6 +83,10 @@ class Board:
             val_to_find = max_val if self.x_or_o == O else min_val
         else:
             val_to_find = max_val if max_val > abs(min_val) else min_val
+        return self._find_places(val_to_find), val_to_find
+
+    def _find_places(self, val_to_find):
+        advice = []
         if val_to_find == 0:
             return advice
         for i in range(4):
@@ -99,59 +103,75 @@ class Board:
         return advice
 
     def computers_turn(self):
-        advice = self._get_advice()
+        advice, val = self._get_advice()
         possible_coord = []
         if len(advice) == 0:
-            possible_coord.append((random.randint(1, 2), random.randint(1, 2)))
-        for a in advice:
-            place, idx = a
-            if place == 'r':
-                elems = [self.squares[idx][i] for i in range(4)]
-                if X in elems and O in elems:
-                    continue
-                for i in range(4):
-                    if self.squares[idx][i] == E:
-                        possible_coord.append((idx, i))
-            elif place == 'c':
-                elems = [self.squares[i][idx] for i in range(4)]
-                if X in elems and O in elems:
-                    continue
-                for i in range(4):
-                    if self.squares[i][idx] == E:
-                        possible_coord.append((i, idx))
-            elif place == 'd':
-                if idx == 0:
-                    elems = [self.squares[i][i] for i in range(4)]
+            possible_coord.append((random.randint(0, 3), random.randint(0, 3)))
+        while True:
+            for a in advice:
+                place, idx = a
+                if place == 'r':
+                    elems = [self.squares[idx][i] for i in range(4)]
                     if X in elems and O in elems:
                         continue
                     for i in range(4):
-                        if self.squares[i][i] == E:
-                            possible_coord.append((i, i))
-                else:
-                    elems = [self.squares[i][3-i] for i in range(4)]
+                        if self.squares[idx][i] == E:
+                            possible_coord.append((idx, i))
+                elif place == 'c':
+                    elems = [self.squares[i][idx] for i in range(4)]
                     if X in elems and O in elems:
                         continue
                     for i in range(4):
-                        if self.squares[i][3-i] == E:
-                            possible_coord.append((i, 3-i))
-            elif place == 's':
-                i, j = idx // 3, idx % 3
-                elems = [self.squares[i][j], self.squares[i+1][j], self.squares[i][j+1], self.squares[i+1][j+1]]
-                if X in elems and O in elems:
-                    continue
-                if self.squares[i][j] == E:
-                    possible_coord.append((i, j))
-                if self.squares[i+1][j] == E:
-                    possible_coord.append((i+1, j))
-                if self.squares[i][j+1] == E:
-                    possible_coord.append((i, j+1))
-                if self.squares[i+1][j+1] == E:
-                    possible_coord.append((i+1, j+1))
-        if len(possible_coord) == 0:
-            for i in range(4):
-                for j in range(4):
+                        if self.squares[i][idx] == E:
+                            possible_coord.append((i, idx))
+                elif place == 'd':
+                    if idx == 0:
+                        elems = [self.squares[i][i] for i in range(4)]
+                        if X in elems and O in elems:
+                            continue
+                        for i in range(4):
+                            if self.squares[i][i] == E:
+                                possible_coord.append((i, i))
+                    else:
+                        elems = [self.squares[i][3-i] for i in range(4)]
+                        if X in elems and O in elems:
+                            continue
+                        for i in range(4):
+                            if self.squares[i][3-i] == E:
+                                possible_coord.append((i, 3-i))
+                elif place == 's':
+                    i, j = idx // 3, idx % 3
+                    elems = [self.squares[i][j], self.squares[i+1][j], self.squares[i][j+1], self.squares[i+1][j+1]]
+                    if X in elems and O in elems:
+                        continue
                     if self.squares[i][j] == E:
                         possible_coord.append((i, j))
-        i, j = random.choice(possible_coord)
+                    if self.squares[i+1][j] == E:
+                        possible_coord.append((i+1, j))
+                    if self.squares[i][j+1] == E:
+                        possible_coord.append((i, j+1))
+                    if self.squares[i+1][j+1] == E:
+                        possible_coord.append((i+1, j+1))
+            if len(possible_coord) == 0:
+                if val == 2*self.x_or_o:
+                    val = -val
+                    advice = self._find_places(val)
+                    continue
+                if val == -2*self.x_or_o:
+                    val = -val/2
+                    advice = self._find_places(val)
+                    continue
+                for i in range(4):
+                    for j in range(4):
+                        if self.squares[i][j] == E:
+                            possible_coord.append((i, j))
+                break
+            else:
+                break
+        duplicates = [k for k, v in Counter(possible_coord).items() if v > 1]
+        if len(duplicates) == 0:
+            i, j = random.choice(possible_coord)
+        else:
+            i, j = random.choice(duplicates)
         self.draw_XO(i, j)
         return i, j
