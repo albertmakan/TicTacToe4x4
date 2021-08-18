@@ -56,10 +56,8 @@ class Board:
         self.x_or_o = X
 
     def check_win(self):
-        max_vals = [
-            max(self.row_sums, key=abs), max(self.col_sums, key=abs),
-            max(self.diag_sums, key=abs), max(self.sqr_sums, key=abs)]
-        max_val = max(max_vals, key=abs)
+        max_vals = [max(s, key=lambda x: abs(x)) for s in [self.row_sums, self.col_sums, self.diag_sums, self.sqr_sums]]
+        max_val = max(max_vals, key=lambda x: abs(x))
         if abs(max_val) == 4:
             winner = 'O' if max_val == 4 else 'X'
             if max_vals[0] == max_val:
@@ -169,9 +167,6 @@ class Board:
             else:
                 break
         duplicates = [k for k, v in Counter(possible_coord).items() if v > 1]
-        if len(duplicates) == 0:
-            i, j = random.choice(possible_coord)
-        else:
-            i, j = random.choice(duplicates)
+        i, j = random.choice(possible_coord if len(duplicates) == 0 else duplicates)
         self.draw_XO(i, j)
         return i, j
